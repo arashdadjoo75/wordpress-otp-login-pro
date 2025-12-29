@@ -1,0 +1,30 @@
+/**
+ * Corporate Theme - Professional & Formal
+ */
+
+.otp-theme-corporate .otp-login-form-container {
+    background: #fff;
+    border: 2px solid #2c5282;
+    padding: 35px;
+    border-radius: 8px;
+}
+
+.otp-theme-corporate .otp-form-header h2 {
+    color: #2c5282;
+    font-weight: 600;
+}
+
+.otp-theme-corporate .otp-button-primary {
+    background: #2c5282;
+    border-radius: 6px;
+}
+
+.otp-theme-corporate .otp-button-primary:hover {
+    background: #2a4365;
+}
+
+.otp-theme-corporate .otp-input:focus,
+.otp-theme-corporate .otp-digit:focus {
+    border-color: #2c5282;
+    box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.1);
+}

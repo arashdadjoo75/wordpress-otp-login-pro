@@ -1,0 +1,22 @@
+/**
+ * RTL Support
+ */
+
+[dir="rtl"] .otp-code-inputs {
+    direction: ltr;
+    /* OTP codes always LTR */
+}
+
+[dir="rtl"] .otp-message {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .otp-info-message {
+    border-left: none;
+    border-right: 4px solid #4299e1;
+}
+
+[dir="rtl"] .otp-form-group input[type="checkbox"] {
+    margin-right: 0;
+    margin-left: 8px;
+}

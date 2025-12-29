@@ -1,0 +1,30 @@
+/**
+ * Minimal Theme - Clean & Simple
+ */
+
+.otp-theme-minimal .otp-login-form-container {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    padding: 30px;
+}
+
+.otp-theme-minimal .otp-form-header h2 {
+    color: #2d3748;
+    font-weight: 500;
+}
+
+.otp-theme-minimal .otp-input,
+.otp-theme-minimal .otp-digit {
+    border-radius: 4px;
+    border-color: #cbd5e0;
+}
+
+.otp-theme-minimal .otp-button-primary {
+    background: #2d3748;
+    border-radius: 4px;
+    box-shadow: none;
+}
+
+.otp-theme-minimal .otp-button-primary:hover {
+    background: #1a202c;
+}
