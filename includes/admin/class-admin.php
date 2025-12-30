@@ -178,43 +178,206 @@ class OTP_Login_Pro_Admin {
     }
     
     public function providers_page() {
+        // Ensure gateway adapter is loaded
+        if (!class_exists('OTP_Login_Pro_Gateway_Adapter')) {
+            $gateway_adapter_file = OTP_LOGIN_PRO_INCLUDES . 'providers/class-gateway-adapter.php';
+            if (file_exists($gateway_adapter_file)) {
+                require_once $gateway_adapter_file;
+            }
+        }
+        
+        // Ensure Provider Manager is loaded
+        if (!class_exists('OTP_Login_Pro_Provider_Manager')) {
+            $provider_manager_file = OTP_LOGIN_PRO_INCLUDES . 'providers/class-provider-manager.php';
+            if (file_exists($provider_manager_file)) {
+                require_once $provider_manager_file;
+            }
+        }
+        
+        // Load Provider Manager to get international providers
+        $international_providers = [];
+        if (class_exists('OTP_Login_Pro_Provider_Manager')) {
+            $provider_manager = new OTP_Login_Pro_Provider_Manager();
+            $international_providers = $provider_manager->get_all_providers();
+        }
+        
+        // Filter SMS providers only
+        $sms_providers = [];
+        foreach ($international_providers as $provider_id => $provider_info) {
+            if ($provider_info['type'] === 'sms') {
+                // Create temporary instance to get name and cost
+                if (class_exists($provider_info['class'])) {
+                    $temp_instance = new $provider_info['class']([]);
+                    $sms_providers[$provider_id] = [
+                        'id' => $provider_id,
+                        'name' => $temp_instance->get_name(),
+                        'cost' => $temp_instance->get_cost(),
+                        'class' => $provider_info['class'],
+                        'type' => 'international'
+                    ];
+                }
+            }
+        }
+        
+        // Load gateways if gateway adapter exists
+        $gateways = [];
+        if (class_exists('OTP_Login_Pro_Gateway_Adapter')) {
+            $gateways = OTP_Login_Pro_Gateway_Adapter::get_all_gateways();
+            // Convert gateways format to match providers format
+            foreach ($gateways as $gateway_id => $gateway) {
+                $gateways[$gateway_id]['type'] = 'gateway';
+            }
+        }
+        
+        $active_gateway = get_option('otp_login_pro_active_gateway', '');
+        $active_sms_provider = get_option('otp_login_pro_sms_provider', '');
+        
+        // Helper function to check if international provider is configured
+        $is_provider_configured = function($provider_id) {
+            $config = get_option("otp_login_pro_provider_{$provider_id}", []);
+            return !empty($config) && isset($config['enabled']) && $config['enabled'];
+        };
+        
+        // Helper function to check if gateway is configured
+        $is_gateway_configured = function($gateway_id) {
+            $username = get_option("otp_login_pro_gateway_{$gateway_id}_username", '');
+            $password = get_option("otp_login_pro_gateway_{$gateway_id}_password", '');
+            $sender = get_option("otp_login_pro_gateway_{$gateway_id}_sender", '');
+            return !empty($username) || !empty($password);
+        };
+        
         ?>
         <div class="wrap">
             <h1><?php _e('OTP Providers Configuration', 'otp-login-pro'); ?></h1>
             
-            <h2><?php _e('SMS Providers', 'otp-login-pro'); ?></h2>
-            <table class="widefat">
-                <thead>
-                    <tr>
-                        <th><?php _e('Provider', 'otp-login-pro'); ?></th>
-                        <th><?php _e('Status', 'otp-login-pro'); ?></th>
-                        <th><?php _e('Cost/SMS', 'otp-login-pro'); ?></th>
-                        <th><?php _e('Actions', 'otp-login-pro'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Twilio</td>
-                        <td><span class="dashicons dashicons-yes-alt" style="color:green"></span> Configured</td>
-                        <td>$0.0079</td>
-                        <td><a href="#twilio-config" class="button">Configure</a> | <a href="#test">Test</a></td>
-                    </tr>
-                    <tr>
-                        <td>Vonage</td>
-                        <td><span class="dashicons dashicons-minus" style="color:#ccc"></span> Not Configured</td>
-                        <td>$0.0062</td>
-                        <td><a href="#vonage-config" class="button">Configure</a></td>
-                    </tr>
-                    <tr>
-                        <td>Kavenegar</td>
-                        <td><span class="dashicons dashicons-yes-alt" style="color:green"></span> Configured</td>
-                        <td>$0.003</td>
-                        <td><a href="#kavenegar-config" class="button">Configure</a> | <a href="#test">Test</a></td>
-                    </tr>
-                </tbody>
-            </table>
+            <h2><?php _e('International SMS Providers', 'otp-login-pro'); ?></h2>
+            <?php if (empty($sms_providers)): ?>
+                <div class="notice notice-warning">
+                    <p><?php _e('No international SMS providers found.', 'otp-login-pro'); ?></p>
+                </div>
+            <?php else: ?>
+                <p class="description"><?php printf(__('Found %d international SMS provider(s).', 'otp-login-pro'), count($sms_providers)); ?></p>
+                
+                <table class="widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th><?php _e('Provider', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Provider ID', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Cost/SMS', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Status', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Actions', 'otp-login-pro'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($sms_providers as $provider_id => $provider): ?>
+                            <?php 
+                            $is_configured = $is_provider_configured($provider_id);
+                            $is_active = ($provider_id === $active_sms_provider);
+                            ?>
+                            <tr>
+                                <td><strong><?php echo esc_html($provider['name']); ?></strong></td>
+                                <td><code><?php echo esc_html($provider_id); ?></code></td>
+                                <td>$<?php echo number_format($provider['cost'], 4); ?></td>
+                                <td>
+                                    <?php if ($is_active && $is_configured): ?>
+                                        <span class="dashicons dashicons-yes-alt" style="color:green"></span> 
+                                        <strong><?php _e('Active & Configured', 'otp-login-pro'); ?></strong>
+                                    <?php elseif ($is_configured): ?>
+                                        <span class="dashicons dashicons-yes-alt" style="color:blue"></span> 
+                                        <?php _e('Configured', 'otp-login-pro'); ?>
+                                    <?php else: ?>
+                                        <span class="dashicons dashicons-minus" style="color:#ccc"></span> 
+                                        <?php _e('Not Configured', 'otp-login-pro'); ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <a href="<?php echo esc_url(admin_url('admin.php?page=otp-login-pro-settings')); ?>" class="button button-small">
+                                        <?php _e('Configure', 'otp-login-pro'); ?>
+                                    </a>
+                                    <?php if ($is_configured): ?>
+                                        <button type="button" class="button button-small otp-test-provider" data-provider="<?php echo esc_attr($provider_id); ?>">
+                                            <?php _e('Test', 'otp-login-pro'); ?>
+                                        </button>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th><?php _e('Provider', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Provider ID', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Cost/SMS', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Status', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Actions', 'otp-login-pro'); ?></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            <?php endif; ?>
             
-            <h2 class="mt-4"><?php _e('Email Providers', 'otp-login-pro'); ?></h2>
+            <h2 class="mt-4" style="margin-top: 30px;"><?php _e('Gateway-based SMS Providers', 'otp-login-pro'); ?></h2>
+            <?php if (empty($gateways)): ?>
+                <div class="notice notice-warning">
+                    <p><?php _e('No SMS gateways found. Please ensure gateway files are present in the gateways directory.', 'otp-login-pro'); ?></p>
+                </div>
+            <?php else: ?>
+                <p class="description"><?php printf(__('Found %d SMS gateway(s). Configure them in <a href="%s">SMS Gateways</a> page.', 'otp-login-pro'), count($gateways), admin_url('admin.php?page=otp-login-pro-gateways')); ?></p>
+                
+                <table class="widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th><?php _e('Provider', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Gateway ID', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Status', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Actions', 'otp-login-pro'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($gateways as $gateway_id => $gateway): ?>
+                            <?php 
+                            $is_configured = $is_gateway_configured($gateway_id);
+                            $is_active = ($gateway_id === $active_gateway);
+                            ?>
+                            <tr>
+                                <td><strong><?php echo esc_html($gateway['name']); ?></strong></td>
+                                <td><code><?php echo esc_html($gateway_id); ?></code></td>
+                                <td>
+                                    <?php if ($is_active && $is_configured): ?>
+                                        <span class="dashicons dashicons-yes-alt" style="color:green"></span> 
+                                        <strong><?php _e('Active & Configured', 'otp-login-pro'); ?></strong>
+                                    <?php elseif ($is_configured): ?>
+                                        <span class="dashicons dashicons-yes-alt" style="color:blue"></span> 
+                                        <?php _e('Configured', 'otp-login-pro'); ?>
+                                    <?php else: ?>
+                                        <span class="dashicons dashicons-minus" style="color:#ccc"></span> 
+                                        <?php _e('Not Configured', 'otp-login-pro'); ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <a href="<?php echo esc_url(admin_url('admin.php?page=otp-login-pro-gateways')); ?>" class="button button-small">
+                                        <?php _e('Configure', 'otp-login-pro'); ?>
+                                    </a>
+                                    <?php if ($is_configured): ?>
+                                        <a href="<?php echo esc_url(admin_url('admin.php?page=otp-login-pro-gateways')); ?>#test" class="button button-small">
+                                            <?php _e('Test', 'otp-login-pro'); ?>
+                                        </a>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th><?php _e('Provider', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Gateway ID', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Status', 'otp-login-pro'); ?></th>
+                            <th><?php _e('Actions', 'otp-login-pro'); ?></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            <?php endif; ?>
+            
+            <h2 class="mt-4" style="margin-top: 30px;"><?php _e('Email Providers', 'otp-login-pro'); ?></h2>
             <table class="widefat">
                 <thead>
                     <tr>

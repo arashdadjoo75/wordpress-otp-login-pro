@@ -178,7 +178,7 @@ class OTP_Login_Pro_Shortcodes {
         }
         
         $user_id = get_current_user_id();
-        $is_verified = (get_user_meta($user_id, '_otp_phone_verified', true);
+        $is_verified = (bool) get_user_meta($user_id, '_otp_phone_verified', true);
         
         if ($is_verified) {
             return '';
