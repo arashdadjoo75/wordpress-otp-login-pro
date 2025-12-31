@@ -25,9 +25,14 @@ class CandooSMS implements GatewayInterface {
         $from     = $this->senderNumber;
         $massage  = $this->message;
         $to       = $this->mobile;
+        $templateID = $this -> $this->templateId;
 
         if ( empty( $username ) || empty( $password ) ) {
             return false;
+        }
+
+        if (!empty($templateID)) {
+            $type = '1';
         }
 
         $i = sizeOf( $to );
@@ -65,14 +70,20 @@ class CandooSMS implements GatewayInterface {
             $client->soap_defencoding = 'UTF-8';
             $client->decode_utf8      = false;
 
-            $results = $client->call( 'Send', [
+            $params = [
                 'username'  => $username,
                 'password'  => $password,
                 'srcNumber' => $from,
                 'body'      => $massage,
                 'destNo'    => $to,
                 'flash'     => '0',
-            ] );
+            ];
+
+            if (!empty($type)) {
+                $params['type'] = $type;
+            }
+
+            $results = $client->call('Send', $params);
 
             $error = [];
             foreach ( $results as $result ) {

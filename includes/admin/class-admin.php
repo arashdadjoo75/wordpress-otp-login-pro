@@ -243,6 +243,7 @@ class OTP_Login_Pro_Admin {
             $username = get_option("otp_login_pro_gateway_{$gateway_id}_username", '');
             $password = get_option("otp_login_pro_gateway_{$gateway_id}_password", '');
             $sender = get_option("otp_login_pro_gateway_{$gateway_id}_sender", '');
+            $templateId = get_option("otp_login_pro_gateway_{$gateway_id}_templateId", '');
             return !empty($username) || !empty($password);
         };
         

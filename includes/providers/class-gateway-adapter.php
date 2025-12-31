@@ -108,6 +108,7 @@ class OTP_Login_Pro_Gateway_Adapter {
             $gateway->username = $config['username'] ?? get_option("otp_login_pro_gateway_{$gateway_id}_username", '');
             $gateway->password = $config['password'] ?? get_option("otp_login_pro_gateway_{$gateway_id}_password", '');
             $gateway->senderNumber = $config['sender'] ?? get_option("otp_login_pro_gateway_{$gateway_id}_sender", '');
+            $gateway ->templateId = $config['templateId'] ?? get_option("otp_login_pro_gateway_{$gateway_id}_templateId", '');
             
             // Set message and mobile
             $gateway->message = $message;

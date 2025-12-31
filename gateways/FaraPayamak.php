@@ -25,6 +25,7 @@ class FaraPayamak implements GatewayInterface {
         $from     = $this->senderNumber;
         $to       = $this->mobile;
         $massage  = $this->message;
+        $bodyId   = $this-> templateId;
 
         if ( empty( $username ) || empty( $password ) ) {
             return false;
@@ -45,6 +46,12 @@ class FaraPayamak implements GatewayInterface {
                 'recId'    => [ 0 ],
                 'status'   => 0,
             ];
+            
+            // set template ID if it exist
+            if (!empty($bodyId)){
+                $parameters['bodyId'] = $bodyId;
+            }
+
             $sms_response = $client->SendSms( $parameters )->SendSmsResult;
         } catch ( SoapFault $ex ) {
             $sms_response = $ex->getMessage();

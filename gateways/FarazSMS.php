@@ -28,6 +28,7 @@ class FarazSMS implements GatewayInterface {
 		$password          = trim( $this->password );
 		$message_content   = trim( $this->message );
 		$sender_number     = trim( $this->senderNumber );
+		$pattern_code      = trim($this ->templateId);
 		$recipient_numbers = $this->mobile;
 		if ( empty( $sender_number ) ) {
 			$sender_number = '+983000505';
@@ -42,7 +43,6 @@ class FarazSMS implements GatewayInterface {
 		if ( substr( $message_content, 0, 11 ) === "patterncode" ) {
 			$message_content = str_replace( [ "\r\n", "\n" ], ';', $message_content );
 			$message_parts   = explode( ';', $message_content );
-			$pattern_code    = explode( ':', $message_parts[0] )[1];
 			unset( $message_parts[0] );
 
 			$pattern_data = [];

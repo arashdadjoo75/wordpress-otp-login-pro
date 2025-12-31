@@ -77,6 +77,9 @@ class OTP_Login_Pro_Gateway_Selector {
      * Get gateway configuration (unified interface)
      */
     private function get_gateway_config($gateway_id, $gateway_type) {
+        error_log("OTP:get_gateway_config gateway_id={$gateway_id} gateway_type={$gateway_type}");
+        echo '<pre>' . esc_html(var_export($gateway_id, true)) . '</pre>';
+
         if ($gateway_type === 'international') {
             // For international providers, map from provider config to unified format
             $config = get_option("otp_login_pro_provider_{$gateway_id}", []);
@@ -85,7 +88,7 @@ class OTP_Login_Pro_Gateway_Selector {
             $username = '';
             $password = '';
             $sender = '';
-            $templateid = '';
+            $templateId = '';
             
             if ($gateway_id === 'twilio') {
                 $username = $config['account_sid'] ?? '';
@@ -99,20 +102,20 @@ class OTP_Login_Pro_Gateway_Selector {
                 $username = $config['api_key'] ?? '';
                 $password = '';
                 $sender = $config['sender'] ?? '';
-                $templateid = $config['templateid']
+                $templateId = $config['templateId'] ?? '';
             } else {
                 // Generic mapping
                 $username = $config['api_key'] ?? $config['account_sid'] ?? $config['username'] ?? '';
                 $password = $config['api_secret'] ?? $config['auth_token'] ?? $config['password'] ?? '';
                 $sender = $config['sender'] ?? $config['from'] ?? $config['from_number'] ?? '';
-                $templateid = $config['templateid']
+                $templateId = $config['templateId'] ?? '';
             }
             
             return [
                 'username' => $username,
                 'password' => $password,
                 'sender' => $sender,
-                'templateid' => $templateid
+                'templateId' => $templateId
             ];
         } else {
             // For gateway-based providers, use standard format
@@ -120,7 +123,7 @@ class OTP_Login_Pro_Gateway_Selector {
                 'username' => get_option("otp_login_pro_gateway_{$gateway_id}_username", ''),
                 'password' => get_option("otp_login_pro_gateway_{$gateway_id}_password", ''),
                 'sender' => get_option("otp_login_pro_gateway_{$gateway_id}_sender", ''),
-                'templateid' => get_option("otp_login_pro_gateway_{$gatemay_id}_templateid")
+                'templateId' => get_option("otp_login_pro_gateway_{$gateway_id}_templateId",'')
             ];
         }
     }
@@ -128,7 +131,7 @@ class OTP_Login_Pro_Gateway_Selector {
     /**
      * Save gateway configuration (unified interface)
      */
-    private function save_gateway_config($gateway_id, $gateway_type, $username, $password, $sender , $templateid) {
+    private function save_gateway_config($gateway_id, $gateway_type, $username, $password, $sender , $templateId) {
         if ($gateway_type === 'international') {
             // For international providers, map unified fields to provider-specific fields
             $config = get_option("otp_login_pro_provider_{$gateway_id}", []);
@@ -145,13 +148,13 @@ class OTP_Login_Pro_Gateway_Selector {
             } elseif ($gateway_id === 'kavenegar') {
                 $config['api_key'] = $username;
                 $config['sender'] = $sender;
-                $config['templateid'] = $templateid
+                $config['templateId'] = $templateId;
             } else {
                 // Generic mapping
                 $config['api_key'] = $username;
                 $config['api_secret'] = $password;
                 $config['sender'] = $sender;
-                $config['templateid'] = $templateid
+                $config['templateId'] = $templateId;
             }
             
             update_option("otp_login_pro_provider_{$gateway_id}", $config);
@@ -160,7 +163,7 @@ class OTP_Login_Pro_Gateway_Selector {
             update_option("otp_login_pro_gateway_{$gateway_id}_username", $username);
             update_option("otp_login_pro_gateway_{$gateway_id}_password", $password);
             update_option("otp_login_pro_gateway_{$gateway_id}_sender", $sender);
-            update_option("otp_login_pro_gateway_{$gateway_id}_templateid", $templateid)
+            update_option("otp_login_pro_gateway_{$gateway_id}_templateId", $templateId);
         }
     }
     
@@ -281,11 +284,11 @@ class OTP_Login_Pro_Gateway_Selector {
                         <th><?php _e('Template ID', 'otp-login-pro'); ?></th>
                         <td>
                             <input type="text" 
-                                   name="otp_template_id" 
-                                   id="otp_template_id"
-                                   value="<?php echo esc_attr($config['templateid']); ?>" 
+                                   name="otp_gateway_templateId" 
+                                   id="otp_gateway_templateId"
+                                   value="<?php echo esc_attr($config['templateId']); ?>" 
                                    class="regular-text" />
-                            <p class="description"><?php _e("Enter you're template ID", 'otp-login-pro'); ?></p>
+                            <p class="description"><?php _e("Enter your template ID", 'otp-login-pro'); ?></p>
                         </td>
                     </tr>
                 </table>
@@ -402,11 +405,11 @@ class OTP_Login_Pro_Gateway_Selector {
         $username = sanitize_text_field($_POST['otp_gateway_username'] ?? '');
         $password = sanitize_text_field($_POST['otp_gateway_password'] ?? '');
         $sender = sanitize_text_field($_POST['otp_gateway_sender'] ?? '');
-        $templateid = sanitize_text_field($_POST['otp_gateway_templateid'] ?? '');
+        $templateId = sanitize_text_field($_POST['otp_gateway_templateId'] ?? '');
         
         if ($gateway_id) {
             update_option('otp_login_pro_active_gateway', $gateway_id);
-            $this->save_gateway_config($gateway_id, $gateway_type, $username, $password, $sender, $templateid);
+            $this->save_gateway_config($gateway_id, $gateway_type, $username, $password, $sender, $templateId);
             
             add_settings_error('otp_gateway_settings', 'settings_updated', __('Settings saved successfully', 'otp-login-pro'), 'success');
         }
